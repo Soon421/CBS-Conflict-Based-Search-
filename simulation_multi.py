@@ -5,7 +5,7 @@ import numpy as np
 from mapping import find_obstacle_rectangles 
 
 
-def sim_multi(solution, agents, graph, map_width=9, map_height=9):
+def sim_multi(solution, agents, graph, map_width=9, map_height=10):
     """
     다중 에이전트의 경로를 동시에 시각화합니다.
     solution: {agent_idx: path, ...} 형태의 딕셔너리
