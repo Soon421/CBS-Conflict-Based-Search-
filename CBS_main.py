@@ -127,6 +127,7 @@ agents={
     2: {'start': (7, 8), 'goal': (1, 0)},
     3: {'start': (1, 1), 'goal': (2, 4)},
     4: {'start': (1, 2), 'goal': (7, 8)},
+    # 5: {'start': (1, 8), 'goal': (3, 8)},
 }
 
 #N Node
@@ -179,6 +180,22 @@ def detect_conflict(solution):
 def cal_sic(solution):
     return sum(len(p)- 1 for p in solution.values())
 
+#패딩
+def pad_paths(solution):
+    max_len = max(len(p) for p in solution.values()) if solution else 0
+    padded = {}
+    for aid, path in solution.items():
+        if not path:
+            padded[aid] = path
+            continue
+        last = path[-1]
+        # 길이를 max_len로 맞출 때까지 goal에서 대기
+        if len(path) < max_len:
+            padded[aid] = path + [last] * (max_len - len(path))
+        else:
+            padded[aid] = path
+    return padded
+
 ##High-level 메인 알고리즘, Conflict Tree
 open_list= []
 solution= None
@@ -225,7 +242,7 @@ try:
         if c_node.cost > last_cost:
             # 비용이 증가했으므로 상태 초기화
             if last_cost != -1: # 맨 처음 실행시에는 출력하지 않음
-                print(f"\n✅ 비용 증가: {last_cost} -> {c_node.cost} (탐색한 노드: {nodes_processed})")
+                print(f"\n 비용 증가: {last_cost} -> {c_node.cost} (탐색한 노드: {nodes_processed})")
             last_cost = c_node.cost
             iterations_in_cost = 0
             detailed_logging = False # 상세 로깅 비활성화
@@ -236,11 +253,12 @@ try:
         # 만약 루프가 의심되면, 상세 로깅 시작
         if not detailed_logging and iterations_in_cost > LOOP_DETECTION_THRESHOLD:
             print("\n" + "!"*60)
-            print(f"⚠️  경고: 비용 {c_node.cost}에서 {iterations_in_cost}번 이상 머물러 있습니다. 무한 루프가 의심됩니다.")
+            print(f" 경고: 비용 {c_node.cost}에서 {iterations_in_cost}번 이상 머물러 있습니다. 무한 루프가 의심됩니다.")
             print("지금부터 상세 로깅을 시작합니다...")
             print("!"*60 + "\n")
             detailed_logging = True
         
+        padded_solution = pad_paths(c_node.solution)
         # 충돌은 여기서 한 번만 확인합니다.
         conflict = detect_conflict(c_node.solution)
 
