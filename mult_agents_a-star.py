@@ -184,11 +184,10 @@ agents={
     4: {'start': (1, 2), 'goal': (7, 8)},
 }
 
-# objective = "soc" 
-solution, cost = multi_agent_a_star(graph, agents)
+#실행 및 출력
+solution, _ = multi_agent_a_star(graph, agents)
 soc_value = compute_soc(solution, agents)  
-print("총 SOC:", soc_value)
-print("총 비용:", cost)
+print("SOC:", soc_value)
 for aid, path in solution.items():
     print(f"Agent {aid} path: {path}")
 
