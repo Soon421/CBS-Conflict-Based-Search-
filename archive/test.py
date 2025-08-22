@@ -1,8 +1,8 @@
 #test
 import heapq
 import math
-from simulation import sim
-from low_level_search import lls
+from archive.simulation import sim
+from core_logic.low_level_search import lls
 
 # 그래프{해당노드:(이웃노드, cost)}
 graph = {

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 # find_obstacle_rectangles 함수는 mapping.py 같은 별도 파일에 있다고 가정합니다.
-from mapping import find_obstacle_rectangles 
+from utils.mapping import find_obstacle_rectangles 
 
 def sim(path, s_node, g_node, graph, map_width=9, map_height=9):
     """

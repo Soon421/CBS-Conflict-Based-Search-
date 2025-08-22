@@ -3,7 +3,7 @@ import matplotlib.patches as patches
 import numpy as np
 from matplotlib.animation import FuncAnimation
 # find_obstacle_rectangles 함수는 mapping.py 같은 별도 파일에 있다고 가정합니다.
-from mapping import find_obstacle_rectangles
+from utils.mapping import find_obstacle_rectangles
 
 def sim_multi(solution, agents, graph, map_width=9, map_height=10):
     """
@@ -20,7 +20,7 @@ def sim_multi(solution, agents, graph, map_width=9, map_height=10):
 
 
     # 에이전트별 색상 지정
-    colors = ['orange', 'cyan', 'magenta', 'green', 'yellow', 'purple']
+    colors = ['orange', 'cyan', 'magenta', 'green', 'yellow', 'purple', 'black', 'darkgary','white']
     agent_colors = {idx: colors[i % len(colors)] for i, idx in enumerate(agents.keys())}
 
     # --- 2. 배경 그리기 (고정 요소) ---
@@ -91,8 +91,28 @@ def sim_multi(solution, agents, graph, map_width=9, map_height=10):
 
         ax.set_title(f"Multi-Agent Path Planning (Time: {time_step})")
 
-    # --- 5. 애니메이션 실행 ---
+    # --- 5. 애니메이션 실행 및 저장 ---
     total_frames = (max_len - 1) * sub_frames_per_step if max_len > 1 else 1
     ani = FuncAnimation(fig, update, frames=total_frames, interval=interval_ms, blit=False, repeat=False)
+    
+    # ✨✨✨✨✨ 저장 코드 시작 ✨✨✨✨✨
+    # FuncAnimation 객체를 'ani'라는 변수에 저장합니다.
 
+    try:
+        # MP4 파일로 저장 (고화질, 작은 용량)
+        print("\n애니메이션을 MP4 파일로 저장 중입니다... (시간이 걸릴 수 있습니다)")
+        ani.save('results/simulation_video.mp4', writer='ffmpeg', fps=30)
+        print("✅ 동영상 저장이 완료되었습니다: simulation_video.mp4")
+
+        # GIF 파일로 저장 (웹 공유용)
+        # print("\n애니메이션을 GIF 파일로 저장 중입니다... (시간이 더 오래 걸릴 수 있습니다)")
+        # ani.save('simulation.gif', writer='pillow', fps=15)
+        # print("✅ GIF 저장이 완료되었습니다: simulation.gif")
+
+    except Exception as e:
+        print(f"\n❌ 애니메이션 저장 중 오류 발생: {e}")
+        print("FFMpeg가 설치되어 있는지 확인해주세요.")
+    # ✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨
+
+    # 애니메이션 창을 보여줍니다.
     plt.show()

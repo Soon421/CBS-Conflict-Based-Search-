@@ -63,34 +63,21 @@ def convert_map_to_graph(filepath):
 
 # --- 사용 예시 ---
 if __name__ == '__main__':
-    # 여기에 변환하고 싶은 .map 파일의 경로를 입력하세요.
-    # 예시를 위해 가상의 맵 파일을 생성하여 테스트합니다.
+    # 1. 여기에 변환하고 싶은 실제 .map 파일의 이름을 입력하세요.
+    map_filename_to_convert = "warehouse-20-40-10-2-1.map" 
     
-    # 가상의 맵 데이터 생성
-    mock_map_data = """type octile
-height 4
-width 5
-map
-@.@@@
-@...@
-@.T.S
-@@.@@
-"""
-    mock_map_filename = "example.map"
-    with open(mock_map_filename, "w") as f:
-        f.write(mock_map_data)
+    # 2. 결과를 저장할 파일 이름을 정합니다.
+    output_filename = "converted_graph.txt"
 
-    # 변환 함수 호출
-    my_graph = convert_map_to_graph(mock_map_filename)
+    # 3. 변환 함수를 호출합니다.
+    my_graph = convert_map_to_graph(map_filename_to_convert)
 
+    # 4. 결과를 터미널 대신 파일에 저장합니다.
     if my_graph:
-        print("--- 변환된 전체 그래프 출력 ---")
-        # 변환된 그래프의 모든 노드와 연결 정보를 출력합니다.
-        for node, neighbors in my_graph.items():
-            print(f"{node}: {neighbors}")
+        with open(output_filename, 'w') as f:
+            for node, neighbors in my_graph.items():
+                f.write(f"{node}: {neighbors}\n") # .write()를 사용하고 줄바꿈(\n)을 추가
         
-        print("\n--- 변환 완료 ---")
+        print(f"--- '{map_filename_to_convert}' 맵 변환 완료 ---")
+        print(f"결과가 '{output_filename}' 파일에 저장되었습니다.")
         print(f"총 {len(my_graph)}개의 노드가 그래프로 변환되었습니다.")
-            
-    # 생성한 가상 파일 삭제
-    os.remove(mock_map_filename)

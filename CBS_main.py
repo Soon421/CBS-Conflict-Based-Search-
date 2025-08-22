@@ -3,8 +3,8 @@ import heapq
 import math
 import time
 from simulation_multi import sim_multi
-from low_level_search import lls
-from random_agents import assign_random_agents
+from core_logic.low_level_search import lls
+from utils.random_agents import assign_random_agents
 
 # wareheouse map
 graph = {
@@ -69,7 +69,7 @@ graph = {
     (7, 9): [((7, 8), 1)],
 }
 # 에이전트 수
-number_of_agents_to_create = 3
+number_of_agents_to_create = 5
 
 # 랜덤 에이전트 생성
 try:
@@ -157,125 +157,127 @@ def pad_paths(solution):
             padded[aid] = path
     return padded
 
-##High-level 메인 알고리즘, Conflict Tree
-open_list= []
-solution= None
-all_initial_paths_found = True
-#탐색노드
-nodes_processed = 0
+
+if __name__ == "__main__":
+    ##High-level 메인 알고리즘, Conflict Tree
+    open_list= []
+    solution= None
+    all_initial_paths_found = True
+    #탐색노드
+    nodes_processed = 0
 
 
-#루트 노드 생성
-#agent별 빈 제약조건
-root_constraints = {idx: set() for idx in agents.keys()}
-#빈 solution
-root_solution={}
+    #루트 노드 생성
+    #agent별 빈 제약조건
+    root_constraints = {idx: set() for idx in agents.keys()}
+    #빈 solution
+    root_solution={}
 
-#각 agent에 대해 제약 조건 없이 low-level search
-for idx, agent_info in agents.items():
-    solution, _ = lls(agent_info['start'], agent_info['goal'],root_constraints[idx], graph)
-    #lls로 충돌고려없는 최적의 길을 찾지 못한 경우
-    if solution is None:
-        all_initial_paths_found = False
-        break
-    #최적의 길을 찾은 경우 solution 업데이트
-    root_solution[idx] = solution
-
-#루트노드 작성
-if all_initial_paths_found:
-    root = CTNode(root_constraints, root_solution, cal_sic(root_solution))
-    heapq.heappush(open_list, root)
-
-
-# 메인루프 실행 전 실험 값 세팅
-start_time = time.time()
-TIME_LIMIT_SECONDS = 180  # 3분 = 180초
-
-
-#High Level 탐색(CT)
-try:
-    while open_list:
-
-        # 런타임 확인
-        if time.time() - start_time > TIME_LIMIT_SECONDS:
-            print(f"\n[탐색 실패] 시간 제한({TIME_LIMIT_SECONDS}초)을 초과했습니다.")
-            solution = None # 실패 처리
+    #각 agent에 대해 제약 조건 없이 low-level search
+    for idx, agent_info in agents.items():
+        solution, _ = lls(agent_info['start'], agent_info['goal'],root_constraints[idx], graph)
+        #lls로 충돌고려없는 최적의 길을 찾지 못한 경우
+        if solution is None:
+            all_initial_paths_found = False
             break
+        #최적의 길을 찾은 경우 solution 업데이트
+        root_solution[idx] = solution
+
+    #루트노드 작성
+    if all_initial_paths_found:
+        root = CTNode(root_constraints, root_solution, cal_sic(root_solution))
+        heapq.heappush(open_list, root)
 
 
-        # 비용이 가장 낮은 노드를 꺼냄
-        c_node = heapq.heappop(open_list)
+    # 메인루프 실행 전 실험 값 세팅
+    start_time = time.time()
+    TIME_LIMIT_SECONDS = 180  # 3분 = 180초
 
-        nodes_processed += 1
 
-        
-        padded_solution = pad_paths(c_node.solution)
-        # 충돌은 여기서 한 번만 확인합니다.
-        conflict = detect_conflict(c_node.solution)
+    #High Level 탐색(CT)
+    try:
+        while open_list:
 
-        
-        # 충돌이 없으면 성공 
-        if conflict is None:
-            print("경로를 찾았습니다")
-            solution = c_node.solution
-            break
+            # 런타임 확인
+            if time.time() - start_time > TIME_LIMIT_SECONDS:
+                print(f"\n[탐색 실패] 시간 제한({TIME_LIMIT_SECONDS}초)을 초과했습니다.")
+                solution = None # 실패 처리
+                break
 
-        #충돌 시 알고리즘
-        agent1_idx, agent2_idx = conflict['agents']
-        conflict_time = conflict['time']
 
-        if conflict['type'] == 'vertex':
-            node = conflict['loc']           
-            # print(f"정점 충돌 감지(현재 비용: {c_node.cost}): Agent {agent1_idx}와 {agent2_idx}가 시간 {conflict_time}에 노드 {node}에서 충돌")
-            constraints_to_add = {
-                agent1_idx: (node, conflict_time),
-                agent2_idx: (node, conflict_time)
-            }
-        elif conflict['type'] == 'edge':
-            edge1 = conflict['loc']
-            edge2 = edge1[::-1] # (u, v) -> (v, u)
-            # print(f"간선 충돌 감지(현재 비용: {c_node.cost}): Agent {agent1_idx}와 {agent2_idx}가 시간 {conflict_time}에 간선 {edge1}에서 충돌")
-            constraints_to_add = {
-                agent1_idx: (edge1, conflict_time),
-                agent2_idx: (edge2, conflict_time)
-            }
+            # 비용이 가장 낮은 노드를 꺼냄
+            c_node = heapq.heappop(open_list)
+
+            nodes_processed += 1
+
             
+            padded_solution = pad_paths(c_node.solution)
+            # 충돌은 여기서 한 번만 확인합니다.
+            conflict = detect_conflict(c_node.solution)
 
-        # 충돌 발생 시, 두 개의 자식 노드 생성 
-        for agent_idx, new_constraint in constraints_to_add.items():
-            # 새로운 제약 조건 추가
-            new_constraints = {k: set(v) for k, v in c_node.constraints.items()}
-            new_constraints[agent_idx].add(new_constraint)
             
-            # 제약이 추가된 에이전트의 경로만 다시 계산
-            new_path, _ = lls(agents[agent_idx]['start'], agents[agent_idx]['goal'], new_constraints[agent_idx], graph)
-            
-            if new_path is not None:
-                #부모의 전체 solution 복사
-                new_paths = c_node.solution.copy()
-                #수정한 path만 교체
-                new_paths[agent_idx] = new_path
+            # 충돌이 없으면 성공 
+            if conflict is None:
+                print("경로를 찾았습니다")
+                solution = c_node.solution
+                break
+
+            #충돌 시 알고리즘
+            agent1_idx, agent2_idx = conflict['agents']
+            conflict_time = conflict['time']
+
+            if conflict['type'] == 'vertex':
+                node = conflict['loc']           
+                print(f"정점 충돌 감지(현재 비용: {c_node.cost}): Agent {agent1_idx}와 {agent2_idx}가 시간 {conflict_time}에 노드 {node}에서 충돌")
+                constraints_to_add = {
+                    agent1_idx: (node, conflict_time),
+                    agent2_idx: (node, conflict_time)
+                }
+            elif conflict['type'] == 'edge':
+                edge1 = conflict['loc']
+                edge2 = edge1[::-1] # (u, v) -> (v, u)
+                print(f"간선 충돌 감지(현재 비용: {c_node.cost}): Agent {agent1_idx}와 {agent2_idx}가 시간 {conflict_time}에 간선 {edge1}에서 충돌")
+                constraints_to_add = {
+                    agent1_idx: (edge1, conflict_time),
+                    agent2_idx: (edge2, conflict_time)
+                }
                 
-                # 새로운 자식 노드를 open_list에 추가
-                child_node = CTNode(new_constraints, new_paths, cal_sic(new_paths))
-                heapq.heappush(open_list, child_node)
 
-except KeyboardInterrupt: 
-    print("\n\n[사용자 요청으로 탐색 중단]")
+            # 충돌 발생 시, 두 개의 자식 노드 생성 
+            for agent_idx, new_constraint in constraints_to_add.items():
+                # 새로운 제약 조건 추가
+                new_constraints = {k: set(v) for k, v in c_node.constraints.items()}
+                new_constraints[agent_idx].add(new_constraint)
+                
+                # 제약이 추가된 에이전트의 경로만 다시 계산
+                new_path, _ = lls(agents[agent_idx]['start'], agents[agent_idx]['goal'], new_constraints[agent_idx], graph)
+                
+                if new_path is not None:
+                    #부모의 전체 solution 복사
+                    new_paths = c_node.solution.copy()
+                    #수정한 path만 교체
+                    new_paths[agent_idx] = new_path
+                    
+                    # 새로운 자식 노드를 open_list에 추가
+                    child_node = CTNode(new_constraints, new_paths, cal_sic(new_paths))
+                    heapq.heappush(open_list, child_node)
 
-finally: 
-    end_time = time.time()
-    runtime = end_time - start_time
-    print(f"탐색된 총 노드의 수: {nodes_processed}개")
-    print(f"run time: {runtime:.4f}초")
+    except KeyboardInterrupt: 
+        print("\n\n[사용자 요청으로 탐색 중단]")
 
-#결과출력
-if solution:
-    for agent_idx, path in solution.items():
-        print(f"Agent {agent_idx}의 경로: {path}")
-        print(f"Agent {agent_idx}의 비용: {len(path) - 1}")
+    finally: 
+        end_time = time.time()
+        runtime = end_time - start_time
+        print(f"탐색된 총 노드의 수: {nodes_processed}개")
+        print(f"run time: {runtime:.4f}초")
 
-    print(f"총 비용 (Sum of Costs): {cal_sic(solution)}")
-    # sim_multi(solution, agents, graph)
-else:
-    print("해법을 찾지 못했습니다.")
+    #결과출력
+    if solution:
+        for agent_idx, path in solution.items():
+            print(f"Agent {agent_idx}의 경로: {path}")
+            print(f"Agent {agent_idx}의 비용: {len(path) - 1}")
+
+        print(f"총 비용 (Sum of Costs): {cal_sic(solution)}")
+        sim_multi(solution, agents, graph)
+    else:
+        print("해법을 찾지 못했습니다.")
